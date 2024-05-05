@@ -1,15 +1,21 @@
 package infrastructure
 
 import (
+	"ProductAppWithGo/persistence"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"testing"
+)
+
+//integration test: bu testler integration testtir.Çünk bunların hepsinin bir entegrasyon noktası var bunlar
+// db miz ile entegre.Db ye yazdığımız logic ve sorgularımızı doğru entegre ettik mi diye test ediyoruz.
+
+import (
 	"ProductAppWithGo/common/postgresql"
 	"ProductAppWithGo/domain"
-	"ProductAppWithGo/persistence"
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"os"
-	"testing"
 )
 
 var productRepository persistence.IProductRepository
@@ -78,6 +84,50 @@ func TestGetAllProducts(t *testing.T) {
 		actualProducts := productRepository.GetAllProducts()
 		assert.Equal(t, 4, len(actualProducts))
 		assert.Equal(t, expected, actualProducts)
+	})
+	clear(ctx, dbPool)
+}
+
+func TestAddProduct(t *testing.T) {
+
+	expected := []domain.Product{
+		domain.Product{
+			Id:       1,
+			Name:     "Kupa",
+			Price:    100.0,
+			Discount: 0.0,
+			Store:    "Kırtasiye Merkezi",
+		},
+	}
+	newProduct := domain.Product{
+		Name:     "Kupa",
+		Price:    100.0,
+		Discount: 0.0,
+		Store:    "Kırtasiye Merkezi",
+	}
+	t.Run("AddProduct", func(t *testing.T) {
+		productRepository.AddProduct(newProduct)
+		actualProducts := productRepository.GetAllProducts()
+		assert.Equal(t, 1, len(actualProducts))
+		assert.Equal(t, expected, actualProducts)
+	})
+	clear(ctx, dbPool)
+}
+
+func TestGetProductById(t *testing.T) {
+	setup(ctx, dbPool)
+
+	t.Run("GetProductById", func(t *testing.T) {
+		product, _ := productRepository.GetById(1)
+		_, err := productRepository.GetById(5)
+		assert.Equal(t, domain.Product{
+			Id:       1,
+			Name:     "AirFryer",
+			Price:    3000.0,
+			Discount: 22.0,
+			Store:    "ABC TECH",
+		}, product)
+		assert.Equal(t, "error while getting product with id 5", err.Error())
 	})
 	clear(ctx, dbPool)
 }
